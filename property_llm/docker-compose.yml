@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: scrapy_user
+      POSTGRES_PASSWORD: scrapy_password
+      POSTGRES_DB: scrapy_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django_app
+    depends_on:
+      - postgres
+      - ollama
+    environment:
+      DATABASE_URL: "postgresql://scrapy_user:scrapy_password@postgres:5432/scrapy_db"
+    volumes:
+      - .:/usr/src/app
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama:/root/.ollama
+    restart: unless-stopped
+    command: serve
+
+volumes:
+  postgres_data:
